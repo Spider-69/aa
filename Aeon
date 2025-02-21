@@ -1,105 +1,60 @@
-#!/bin/bash
+#!/bin/sh
 
-set -e  # Exit immediately if a command exits with a non-zero status
-set -o pipefail  # Prevent errors in a pipeline from being masked
+# Update and upgrade packages
+apt-get update && apt-get upgrade -y
 
-# Update and upgrade system packages
-update_system() {
-    echo "Updating system..."
-    apt-get update && apt-get upgrade -y
-}
+# Install necessary repositories and Python 3.12
+apt-get install -y software-properties-common
+add-apt-repository ppa:deadsnakes/ppa
+apt-get update
+apt-get install -y python3.12 python3.12-dev python3.12-venv python3-pip libpython3.12 libpython3.12-dev
 
-# Install Python 3.12 and essential dependencies
-install_python() {
-    echo "Installing Python 3.12 and dependencies..."
-    apt-get install -y software-properties-common
-    add-apt-repository -y ppa:deadsnakes/ppa
-    apt-get update
-    apt-get install -y python3.12 python3.12-dev python3.12-venv python3-pip libpython3.12 libpython3.12-dev
-}
+# Install additional dependencies
+apt-get install -y --no-install-recommends \
+    apt-utils aria2 curl zstd git libmagic-dev \
+    locales mediainfo neofetch p7zip-full \
+    p7zip-rar tzdata wget \
+    autoconf automake build-essential cmake \
+    g++ gcc gettext gpg-agent intltool libtool \
+    make unzip zip autoconf automake libtool \
+    libcurl4-openssl-dev libsodium-dev libssl-dev \
+    libcrypto++-dev libc-ares-dev libsqlite3-dev \
+    libfreeimage-dev swig libboost-all-dev \
+    libpthread-stubs0-dev zlib1g-dev
 
-# Install additional system dependencies
-install_dependencies() {
-    echo "Installing additional system dependencies..."
-    apt-get install -y --no-install-recommends \
-        apt-utils aria2 curl zstd git libmagic-dev \
-        locales mediainfo neofetch p7zip-full \
-        p7zip-rar tzdata wget autoconf automake \
-        build-essential cmake g++ gcc gettext \
-        gpg-agent intltool libtool make unzip zip \
-        libcurl4-openssl-dev libsodium-dev libssl-dev \
-        libcrypto++-dev libc-ares-dev libsqlite3-dev \
-        libfreeimage-dev swig libboost-all-dev \
-        libpthread-stubs0-dev zlib1g-dev
-}
+# Create temporary directory and install FFmpeg
+mkdir /Temp
+cd /Temp
+wget https://github.com/arakurumi/FFmpeg-Builds/releases/download/latest/ffmpeg-n7.1-latest-linux64-nonfree-7.1.tar.xz
+7z x ffmpeg-n7.1-latest-linux64-nonfree-7.1.tar.xz
+7z x ffmpeg-n7.1-latest-linux64-nonfree-7.1.tar
+cd /Temp/ffmpeg-n7.1-latest-linux64-nonfree-7.1/bin
+mv ffmpeg /usr/bin/felix
+mv ffprobe /usr/bin/ffprobe
+mv ffplay /usr/bin/ffplay
+chmod +x /usr/bin/felix /usr/bin/ffprobe /usr/bin/ffplay
 
-# Install FFmpeg based on system architecture
-install_ffmpeg() {
-    echo "Installing FFmpeg..."
-    ARCH=$(uname -m)
-    TEMP_DIR=$(mktemp -d)
-    cd "$TEMP_DIR"
+# Install rclone and rename binaries
+cd /Temp
+curl https://rclone.org/install.sh | bash
 
-    case "$ARCH" in
-        x86_64)
-            FF_URL="https://github.com/5hojib/FFmpeg-Builds/releases/download/latest/ffmpeg-n7.1-latest-linux64-gpl-7.1.tar.xz"
-            ;;
-        aarch64)
-            FF_URL="https://github.com/5hojib/FFmpeg-Builds/releases/download/latest/ffmpeg-n7.1-latest-linuxarm64-gpl-7.1.tar.xz"
-            ;;
-        *)
-            echo "Unsupported architecture for FFmpeg: $ARCH"
-            exit 1
-            ;;
-    esac
+# rename binaries
+mv /usr/bin/rclone /usr/bin/xone
+mv /usr/bin/aria2c /usr/bin/xria
 
-    wget -q "$FF_URL" -O ffmpeg.tar.xz
-    tar -xf ffmpeg.tar.xz
-    FFMPEG_DIR=$(find . -type d -name "ffmpeg-*")
-    
-    if [ -d "$FFMPEG_DIR/bin" ]; then
-        mv "$FFMPEG_DIR/bin/ffmpeg" /usr/bin/felix
-        mv "$FFMPEG_DIR/bin/ffprobe" /usr/bin/ffprobe
-        mv "$FFMPEG_DIR/bin/ffplay" /usr/bin/ffplay
-        chmod +x /usr/bin/felix /usr/bin/ffprobe /usr/bin/ffplay
-    else
-        echo "FFmpeg extraction failed!"
-        exit 1
-    fi
+# Clean up unnecessary packages
+apt-get remove -y \
+    autoconf automake build-essential \
+    cmake g++ gcc gettext gpg-agent \
+    intltool libtool make unzip zip \
+    libtool libcurl4-openssl-dev libssl-dev \
+    libc-ares-dev libsqlite3-dev swig \
+    libboost-all-dev libpthread-stubs0-dev zlib1g-dev
 
-    cd /
-    rm -rf "$TEMP_DIR"
-}
+apt-get autoremove -y
+apt-get autoclean -y
 
-# Install Python packages
-install_python_packages() {
-    echo "Installing Python packages..."
-    python3.12 -m pip install --break-system-packages --no-cache-dir -U setuptools uv
-}
-
-# Clean up unnecessary packages and temporary files
-cleanup() {
-    echo "Cleaning up..."
-    apt-get remove -y \
-        autoconf automake build-essential cmake g++ gcc gettext \
-        gpg-agent intltool libtool make unzip zip libcurl4-openssl-dev \
-        libssl-dev libc-ares-dev libsqlite3-dev swig libboost-all-dev \
-        libpthread-stubs0-dev zlib1g-dev
-    apt-get autoremove -y
-    apt-get autoclean -y
-
-    rm -rf /Temp Aeon Dockerfile
-}
-
-# Main script execution
-main() {
-    update_system
-    install_python
-    install_dependencies
-    install_ffmpeg
-    install_python_packages
-    cleanup
-    echo "Setup complete!"
-}
-
-main
+# Clean up temporary directories and files
+rm -rf /Temp
+rm -rf Aeon
+rm -rf Dockerfile
