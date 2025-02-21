@@ -69,10 +69,10 @@ install_ffmpeg() {
 
     7z x ffmpeg-n7.1-latest-linux*-gpl-7.1.tar.xz
     7z x ffmpeg-n7.1-latest-linux*-gpl-7.1.tar
-    mv /Temp/ffmpeg-n7.1-latest-linux*/bin/ffmpeg /usr/bin/xtra
+    mv /Temp/ffmpeg-n7.1-latest-linux*/bin/ffmpeg /usr/bin/felix
     mv /Temp/ffmpeg-n7.1-latest-linux*/bin/ffprobe /usr/bin/ffprobe
     mv /Temp/ffmpeg-n7.1-latest-linux*/bin/ffplay /usr/bin/ffplay
-    chmod +x /usr/bin/xtra /usr/bin/ffprobe /usr/bin/ffplay
+    chmod +x /usr/bin/felix /usr/bin/ffprobe /usr/bin/ffplay
 }
 
 # Install rclone and rename binaries
@@ -84,22 +84,9 @@ install_rclone() {
 
 # Install Python packages
 install_python_packages() {
-    pip3 install --break-system-packages --no-cache-dir -U setuptools uv
+    pip3 install --break-system-packages --no-cache-dir -U setuptools uv pyrofork tgcrypto-pyrofork aiofiles aiohttp uvloop dnspython ffmpeg-python python-dotenv psutil
 }
 
-# Clone and build MEGA SDK
-build_mega_sdk() {
-    git clone https://github.com/meganz/sdk.git --depth=1 -b v4.8.0 /home/sdk
-    cd /home/sdk
-    rm -rf .git
-    autoupdate -fIv && ./autogen.sh
-    ./configure --disable-silent-rules --enable-python --with-sodium --disable-examples
-    make -j$(nproc --all)
-
-    cd bindings/python/
-    python3.12 setup.py bdist_wheel
-    pip3 install --break-system-packages --no-cache-dir dist/megasdk-4.8.0-*.whl
-}
 
 # Clean up unnecessary packages and temporary files
 cleanup() {
@@ -123,7 +110,6 @@ main() {
     install_ffmpeg
     install_rclone
     install_python_packages
-    build_mega_sdk
     cleanup
 }
 
