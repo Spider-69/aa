@@ -10,7 +10,7 @@ install_python() {
     apt-get install -y software-properties-common
     add-apt-repository -y ppa:deadsnakes/ppa
     apt-get update
-    apt-get install -y python3.12 python3.12-dev python3.12-venv python3-pip libpython3.12 libpython3.12-dev
+    apt-get install -y python3.10 python3.10-dev python3.10-venv python3-pip libpython3.10 libpython3.10-dev
 }
 
 # Install additional system dependencies
@@ -27,26 +27,6 @@ install_dependencies() {
         libpthread-stubs0-dev zlib1g-dev
 }
 
-# Download and install qbittorrent-nox based on system architecture
-install_qbittorrent() {
-    ARCH=$(uname -m)
-    mkdir -p /usr/local/bin
-
-    case "$ARCH" in
-        x86_64)
-            wget -qO /usr/local/bin/xnox https://github.com/userdocs/qbittorrent-nox-static/releases/latest/download/x86_64-qbittorrent-nox
-            ;;
-        aarch64)
-            wget -qO /usr/local/bin/xnox https://github.com/userdocs/qbittorrent-nox-static/releases/latest/download/aarch64-qbittorrent-nox
-            ;;
-        *)
-            echo "Unsupported architecture for qbittorrent-nox: $ARCH"
-            exit 1
-            ;;
-    esac
-
-    chmod 700 /usr/local/bin/xnox
-}
 
 # Install FFmpeg based on system architecture
 install_ffmpeg() {
@@ -75,16 +55,11 @@ install_ffmpeg() {
     chmod +x /usr/bin/felix /usr/bin/ffprobe /usr/bin/ffplay
 }
 
-# Install rclone and rename binaries
-install_rclone() {
-    curl https://rclone.org/install.sh | bash
-    mv /usr/bin/rclone /usr/bin/xone
-    mv /usr/bin/aria2c /usr/bin/xria
-}
+
 
 # Install Python packages
 install_python_packages() {
-    pip3 install --break-system-packages --no-cache-dir -U setuptools uv pyrofork tgcrypto-pyrofork aiofiles aiohttp uvloop dnspython ffmpeg-python python-dotenv psutil
+    pip3 install --break-system-packages --no-cache-dir -U setuptools uv
 }
 
 
@@ -106,9 +81,9 @@ main() {
     update_system
     install_python
     install_dependencies
-    install_qbittorrent
+
     install_ffmpeg
-    install_rclone
+
     install_python_packages
     cleanup
 }
